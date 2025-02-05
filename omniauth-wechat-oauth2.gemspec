@@ -17,7 +17,7 @@ Gem::Specification.new do |s|
   s.email        = 'askinnyworm@gmail.com'
   s.homepage     = 'https://github.com/skinnyworm/omniauth-wechat-oauth2'
 
-  s.add_dependency 'omniauth', '~> 1.0'
-  s.add_dependency 'omniauth-oauth2', '~> 1.0'
+  # s.add_dependency 'omniauth', '~> 1.0'
+  # s.add_dependency 'omniauth-oauth2', '~> 1.0'
   s.add_development_dependency 'rspec', '~> 2.7'
 end
