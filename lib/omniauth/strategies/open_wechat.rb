@@ -3,7 +3,7 @@ require "omniauth-oauth2"
 module OmniAuth
   module Strategies
     class OpenWechat < OmniAuth::Strategies::OAuth2
-      option :name, "open_wechat"
+      option :name, "wechat"
 
       option :client_options, {
         site:          "https://api.weixin.qq.com",
@@ -16,10 +16,6 @@ module OmniAuth
 
       option :token_params, {parse: :json}
 
-      def callback_url
-        full_host + script_name + callback_path
-      end
-
       uid do
         raw_info['openid']
       end
@@ -31,9 +27,7 @@ module OmniAuth
           province:   raw_info['province'],
           city:       raw_info['city'],
           country:    raw_info['country'],
-          headimgurl: raw_info['headimgurl'],
-          image:      raw_info['headimgurl'],
-          unionid:    raw_info['unionid']
+          headimgurl: raw_info['headimgurl']
         }
       end
 
@@ -42,9 +36,8 @@ module OmniAuth
       end
 
       def request_phase
-        params = client.auth_code.authorize_params.merge(authorize_params)
+        params = client.auth_code.authorize_params.merge(redirect_uri: callback_url).merge(authorize_params)
         params["appid"] = params.delete("client_id")
-        params["redirect_uri"] = callback_url
         redirect client.authorize_url(params)
       end
 
@@ -52,23 +45,21 @@ module OmniAuth
         @uid ||= access_token["openid"]
         @raw_info ||= begin
           access_token.options[:mode] = :query
-          if ["snsapi_login", "snsapi_userinfo"].include?(access_token["scope"])
-            access_token.get("/sns/userinfo", :params => { "openid" => @uid, "lang" => "zh_CN" }, parse: :json).parsed
+          if access_token["scope"] == "snsapi_userinfo"
+            @raw_info = access_token.get("/sns/userinfo", :params => {"openid" => @uid}, parse: :json).parsed
           else
-            { "openid" => @uid }
+            @raw_info = {"openid" => @uid }
           end
         end
-        @raw_info
       end
 
       protected
       def build_access_token
         params = {
-          'appid'        => client.id,
-          'secret'       => client.secret,
-          'code'         => request.params['code'],
-          'grant_type'   => 'authorization_code',
-          'redirect_uri' => callback_url
+          'appid' => client.id,
+          'secret' => client.secret,
+          'code' => request.params['code'],
+          'grant_type' => 'authorization_code'
           }.merge(token_params.to_hash(symbolize_keys: true))
         client.get_token(params, deep_symbolize(options.auth_token_params))
       end
